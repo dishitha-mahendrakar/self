@@ -17,16 +17,14 @@ app.listen(5000, "0.0.0.0", () => {
 
 
 app.post("/generate-hash", (req, res) => {
-  const { password } = req.body;
+  const password = req.body?.password;
 
   if (!password) {
     return res.status(400).json({ error: "Password cannot be empty" });
   }
 
   const hash = crypto.createHash("sha256").update(password).digest("hex");
-
-  // store the generated hash for later use by hashcat step
   fs.writeFileSync("hashes.txt", hash + "\n");
-
   res.json({ hash });
 });
+
