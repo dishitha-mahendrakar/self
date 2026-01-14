@@ -71,6 +71,51 @@ app.post("/api/save-rules", (req, res) => {
   });
 });
 
+app.post("/run-hashcat", (req, res) => {
+  const { attackType } = req.body || {};
+
+  if (!attackType) {
+    return res.status(400).json({ error: "attackType is required" });
+  }
+
+  // simulate "time taken"
+  const timeTaken = (Math.random() * 3 + 0.5).toFixed(2);
+  fs.writeFileSync("time.txt", timeTaken);
+
+  // read hash from hashes.txt if present
+  let hash = "";
+  if (fs.existsSync("hashes.txt")) {
+    hash = fs.readFileSync("hashes.txt", "utf-8").trim();
+  }
+
+  // simulated output
+  // if hash exists, we pretend it cracked to "hello123"
+  if (hash) {
+    fs.writeFileSync("result.txt", `${hash}:hello123\n`);
+  } else {
+    fs.writeFileSync("result.txt", "");
+  }
+
+  // update history.json
+  const history = fs.existsSync("history.json")
+    ? JSON.parse(fs.readFileSync("history.json", "utf-8"))
+    : [];
+
+  history.push({
+    attackType,
+    time: Number(timeTaken),
+    timestamp: new Date().toISOString(),
+  });
+
+  fs.writeFileSync("history.json", JSON.stringify(history, null, 2));
+
+  res.json({
+    message: "Attack completed (simulated)",
+    attackType,
+    time: timeTaken,
+  });
+});
+
 app.get("/results", (req, res) => {
   const time = fs.existsSync("time.txt") ? fs.readFileSync("time.txt", "utf-8") : "0";
 
