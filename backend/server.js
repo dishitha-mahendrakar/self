@@ -100,6 +100,9 @@ curl -X POST "http://localhost:5000/api/save-rules" \
   -H "Content-Type: application/json" \
   -d '{"capitalize":true,"appendDigits":true,"reverse":true}'
 
+cd ~/self/backend
+echo "abcd1234hash:hello123" > result.txt
+echo "1.23" > time.txt
 curl http://localhost:5000/results
 
 */
