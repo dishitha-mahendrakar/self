@@ -151,6 +151,15 @@ app.get("/results", (req, res) => {
   res.json(results);
 });
 
+app.get("/history", (req, res) => {
+  if (!fs.existsSync("history.json")) {
+    return res.json([]);
+  }
+
+  const history = JSON.parse(fs.readFileSync("history.json", "utf-8"));
+  res.json(history);
+});
+
 // --------------------
 app.listen(5000, "0.0.0.0", () => {
   console.log("Backend running on port 5000");
