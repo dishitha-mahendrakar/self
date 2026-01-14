@@ -71,4 +71,8 @@ app.post("/api/save-rules", (req, res) => {
   });
 });
 
-
+/*
+curl -X POST "http://localhost:5000/api/save-rules" \
+  -H "Content-Type: application/json" \
+  -d '{"capitalize":true,"appendDigits":true,"reverse":true}'
+*/
