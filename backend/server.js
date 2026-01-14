@@ -7,15 +7,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// --------------------
+// 1) Health check
+// --------------------
 app.get("/health", (req, res) => {
   res.json({ ok: true, message: "Backend running" });
 });
 
-app.listen(5000, "0.0.0.0", () => {
-  console.log("Backend running on port 5000");
-});
-
-
+// --------------------
+// 2) Generate SHA-256 hash
+// --------------------
 app.post("/generate-hash", (req, res) => {
   const password = req.body?.password;
 
@@ -24,17 +25,21 @@ app.post("/generate-hash", (req, res) => {
   }
 
   const hash = crypto.createHash("sha256").update(password).digest("hex");
+
+  // Saves in backend folder
   fs.writeFileSync("hashes.txt", hash + "\n");
+
   res.json({ hash });
 });
 
+// --------------------
+// 3) Save Rules
+// --------------------
 app.post("/api/save-rules", (req, res) => {
-  // Start rule file with identity rule
+  // Always start with identity rule
   let rulesFile = ":\n";
   const meta = {};
 
-  // Expect boolean flags from frontend
-  // Example: { capitalize: true, reverse: true, appendDigits: true }
   if (req.body?.capitalize) {
     rulesFile += "c\n";
     meta.capitalize = true;
@@ -60,17 +65,19 @@ app.post("/api/save-rules", (req, res) => {
     meta.appendDigits = true;
   }
 
-  // Write files inside backend folder
   fs.writeFileSync("rules.rule", rulesFile);
   fs.writeFileSync("rules.json", JSON.stringify(meta, null, 2));
 
   res.json({
     message: "Rules saved",
     meta,
-    ruleLines: rulesFile.trim().split("\n").length
+    ruleLines: rulesFile.trim().split("\n").length,
   });
 });
 
+// --------------------
+// 4) Run Attack (SIMULATED)
+// --------------------
 app.post("/run-hashcat", (req, res) => {
   const { attackType } = req.body || {};
 
@@ -78,25 +85,25 @@ app.post("/run-hashcat", (req, res) => {
     return res.status(400).json({ error: "attackType is required" });
   }
 
-  // simulate "time taken"
+  // Simulate time taken
   const timeTaken = (Math.random() * 3 + 0.5).toFixed(2);
   fs.writeFileSync("time.txt", timeTaken);
 
-  // read hash from hashes.txt if present
+  // Read the last hash stored
   let hash = "";
   if (fs.existsSync("hashes.txt")) {
     hash = fs.readFileSync("hashes.txt", "utf-8").trim();
   }
 
-  // simulated output
-  // if hash exists, we pretend it cracked to "hello123"
+  // Simulated result file
+  // Format: hash:password
   if (hash) {
     fs.writeFileSync("result.txt", `${hash}:hello123\n`);
   } else {
     fs.writeFileSync("result.txt", "");
   }
 
-  // update history.json
+  // Update history
   const history = fs.existsSync("history.json")
     ? JSON.parse(fs.readFileSync("history.json", "utf-8"))
     : [];
@@ -116,14 +123,18 @@ app.post("/run-hashcat", (req, res) => {
   });
 });
 
+// --------------------
+// 5) Fetch Results
+// --------------------
 app.get("/results", (req, res) => {
-  const time = fs.existsSync("time.txt") ? fs.readFileSync("time.txt", "utf-8") : "0";
+  const time = fs.existsSync("time.txt")
+    ? fs.readFileSync("time.txt", "utf-8")
+    : "0";
 
   const rules = fs.existsSync("rules.json")
     ? JSON.parse(fs.readFileSync("rules.json", "utf-8"))
     : {};
 
-  // result.txt contains lines like: hash:password
   if (!fs.existsSync("result.txt")) {
     return res.json([]);
   }
@@ -138,6 +149,11 @@ app.get("/results", (req, res) => {
     });
 
   res.json(results);
+});
+
+// --------------------
+app.listen(5000, "0.0.0.0", () => {
+  console.log("Backend running on port 5000");
 });
 
 /*
