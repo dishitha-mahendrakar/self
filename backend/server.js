@@ -71,6 +71,30 @@ app.post("/api/save-rules", (req, res) => {
   });
 });
 
+app.get("/results", (req, res) => {
+  const time = fs.existsSync("time.txt") ? fs.readFileSync("time.txt", "utf-8") : "0";
+
+  const rules = fs.existsSync("rules.json")
+    ? JSON.parse(fs.readFileSync("rules.json", "utf-8"))
+    : {};
+
+  // result.txt contains lines like: hash:password
+  if (!fs.existsSync("result.txt")) {
+    return res.json([]);
+  }
+
+  const results = fs
+    .readFileSync("result.txt", "utf-8")
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => {
+      const [hash, password] = line.split(":");
+      return { hash, password, time, rules };
+    });
+
+  res.json(results);
+});
+
 /*
 curl -X POST "http://localhost:5000/api/save-rules" \
   -H "Content-Type: application/json" \
