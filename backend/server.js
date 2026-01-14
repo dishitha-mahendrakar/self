@@ -1,22 +1,37 @@
+// =======================
+// 1) Imports (top of file)
+// =======================
 const express = require("express");
 const cors = require("cors");
 const crypto = require("crypto");
 const fs = require("fs");
 
+// =======================
+// 2) App setup
+// =======================
 const app = express();
+
+// Middleware (must be above routes)
 app.use(cors());
 app.use(express.json());
 
-// --------------------
-// 1) Health check
-// --------------------
+// =======================
+// 3) Routes start here
+// =======================
+
+// ------------------------------------
+// ROUTE A) Health check
+// Frontend uses: GET /health
+// ------------------------------------
 app.get("/health", (req, res) => {
   res.json({ ok: true, message: "Backend running" });
 });
 
-// --------------------
-// 2) Generate SHA-256 hash
-// --------------------
+// ------------------------------------
+// ROUTE B) Generate hash
+// Frontend uses: POST /generate-hash
+// Writes: hashes.txt (in backend folder)
+// ------------------------------------
 app.post("/generate-hash", (req, res) => {
   const password = req.body?.password;
 
@@ -26,20 +41,23 @@ app.post("/generate-hash", (req, res) => {
 
   const hash = crypto.createHash("sha256").update(password).digest("hex");
 
-  // Saves in backend folder
+  // saved in backend folder because node runs here
   fs.writeFileSync("hashes.txt", hash + "\n");
 
   res.json({ hash });
 });
 
-// --------------------
-// 3) Save Rules
-// --------------------
+// ------------------------------------
+// ROUTE C) Save rules
+// Frontend uses: POST /api/save-rules
+// Writes: rules.rule and rules.json
+// ------------------------------------
 app.post("/api/save-rules", (req, res) => {
-  // Always start with identity rule
+  // Start rule file with identity rule
   let rulesFile = ":\n";
   const meta = {};
 
+  // These flags come from frontend checkboxes
   if (req.body?.capitalize) {
     rulesFile += "c\n";
     meta.capitalize = true;
@@ -65,6 +83,7 @@ app.post("/api/save-rules", (req, res) => {
     meta.appendDigits = true;
   }
 
+  // Write both files
   fs.writeFileSync("rules.rule", rulesFile);
   fs.writeFileSync("rules.json", JSON.stringify(meta, null, 2));
 
@@ -75,9 +94,11 @@ app.post("/api/save-rules", (req, res) => {
   });
 });
 
-// --------------------
-// 4) Run Attack (SIMULATED)
-// --------------------
+// ------------------------------------
+// ROUTE D) Run attack (SIMULATED)
+// Frontend uses: POST /run-hashcat
+// Writes: time.txt, result.txt, history.json
+// ------------------------------------
 app.post("/run-hashcat", (req, res) => {
   const { attackType } = req.body || {};
 
@@ -89,21 +110,21 @@ app.post("/run-hashcat", (req, res) => {
   const timeTaken = (Math.random() * 3 + 0.5).toFixed(2);
   fs.writeFileSync("time.txt", timeTaken);
 
-  // Read the last hash stored
+  // Read hash from hashes.txt if it exists
   let hash = "";
   if (fs.existsSync("hashes.txt")) {
     hash = fs.readFileSync("hashes.txt", "utf-8").trim();
   }
 
-  // Simulated result file
-  // Format: hash:password
+  // Simulated output format expected by /results:
+  // hash:password
   if (hash) {
     fs.writeFileSync("result.txt", `${hash}:hello123\n`);
   } else {
     fs.writeFileSync("result.txt", "");
   }
 
-  // Update history
+  // Append to history.json
   const history = fs.existsSync("history.json")
     ? JSON.parse(fs.readFileSync("history.json", "utf-8"))
     : [];
@@ -123,9 +144,12 @@ app.post("/run-hashcat", (req, res) => {
   });
 });
 
-// --------------------
-// 5) Fetch Results
-// --------------------
+// ------------------------------------
+// ROUTE E) Results
+// Frontend uses: GET /results
+// Reads: result.txt, time.txt, rules.json
+// Returns: array of {hash, password, time, rules}
+// ------------------------------------
 app.get("/results", (req, res) => {
   const time = fs.existsSync("time.txt")
     ? fs.readFileSync("time.txt", "utf-8")
@@ -151,6 +175,11 @@ app.get("/results", (req, res) => {
   res.json(results);
 });
 
+// ------------------------------------
+// ROUTE F) History
+// Frontend uses: GET /history
+// Reads: history.json
+// ------------------------------------
 app.get("/history", (req, res) => {
   if (!fs.existsSync("history.json")) {
     return res.json([]);
@@ -160,10 +189,13 @@ app.get("/history", (req, res) => {
   res.json(history);
 });
 
-// --------------------
+// =======================
+// 4) Server listen (bottom)
+// =======================
 app.listen(5000, "0.0.0.0", () => {
   console.log("Backend running on port 5000");
 });
+
 
 /*
 curl -X POST "http://localhost:5000/api/save-rules" \
