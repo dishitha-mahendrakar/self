@@ -28,3 +28,47 @@ app.post("/generate-hash", (req, res) => {
   res.json({ hash });
 });
 
+app.post("/api/save-rules", (req, res) => {
+  // Start rule file with identity rule
+  let rulesFile = ":\n";
+  const meta = {};
+
+  // Expect boolean flags from frontend
+  // Example: { capitalize: true, reverse: true, appendDigits: true }
+  if (req.body?.capitalize) {
+    rulesFile += "c\n";
+    meta.capitalize = true;
+  }
+  if (req.body?.lowercase) {
+    rulesFile += "l\n";
+    meta.lowercase = true;
+  }
+  if (req.body?.reverse) {
+    rulesFile += "r\n";
+    meta.reverse = true;
+  }
+  if (req.body?.duplicate) {
+    rulesFile += "d\n";
+    meta.duplicate = true;
+  }
+  if (req.body?.toggleCase) {
+    rulesFile += "t\n";
+    meta.toggleCase = true;
+  }
+  if (req.body?.appendDigits) {
+    rulesFile += "$1\n$2\n$3\n";
+    meta.appendDigits = true;
+  }
+
+  // Write files inside backend folder
+  fs.writeFileSync("rules.rule", rulesFile);
+  fs.writeFileSync("rules.json", JSON.stringify(meta, null, 2));
+
+  res.json({
+    message: "Rules saved",
+    meta,
+    ruleLines: rulesFile.trim().split("\n").length
+  });
+});
+
+
