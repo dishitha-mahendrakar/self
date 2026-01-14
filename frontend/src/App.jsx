@@ -1,15 +1,26 @@
+// =======================
+// 1) Imports (top of file)
+// =======================
 import { useState } from "react";
 import { getHealth, API_BASE } from "./api";
 
+// =======================
+// 2) Component starts here
+// =======================
 export default function App() {
+  // ======================================
+  // 3) State variables (ALL useState here)
+  // ======================================
+
+  // Health check state
   const [status, setStatus] = useState(null);
   const [err, setErr] = useState("");
 
-  // Hash generator
+  // Hash generator state
   const [password, setPassword] = useState("");
   const [hash, setHash] = useState("");
 
-  // Rule designer
+  // Rule designer state
   const [rules, setRules] = useState({
     capitalize: false,
     lowercase: false,
@@ -19,12 +30,20 @@ export default function App() {
     appendDigits: false,
   });
 
-  // Run attack
+  // Run attack state
   const [attackType, setAttackType] = useState("SHA-256");
 
-  // Results viewer
+  // Results state
   const [results, setResults] = useState([]);
 
+  // History state
+  const [history, setHistory] = useState([]);
+
+  // ==================================================
+  // 4) Functions (ALL API calling functions written here)
+  // ==================================================
+
+  // 4.1 Health check
   async function checkBackend() {
     setErr("");
     setStatus(null);
@@ -36,6 +55,7 @@ export default function App() {
     }
   }
 
+  // 4.2 Generate hash
   async function generateHash() {
     setErr("");
     setHash("");
@@ -54,6 +74,7 @@ export default function App() {
     }
   }
 
+  // 4.3 Save rules
   async function saveRules() {
     setErr("");
     try {
@@ -65,13 +86,13 @@ export default function App() {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-
       alert("Rules saved on backend!");
     } catch (e) {
       setErr(String(e.message || e));
     }
   }
 
+  // 4.4 Run attack
   async function runAttack() {
     setErr("");
     try {
@@ -83,13 +104,13 @@ export default function App() {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-
       alert(`Attack done: ${data.attackType} in ${data.time}s`);
     } catch (e) {
       setErr(String(e.message || e));
     }
   }
 
+  // 4.5 Load results
   async function loadResults() {
     setErr("");
     try {
@@ -102,14 +123,36 @@ export default function App() {
     }
   }
 
+  // 4.6 Load history
+  async function loadHistory() {
+    setErr("");
+    try {
+      const res = await fetch(`${API_BASE}/history`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setHistory(data);
+    } catch (e) {
+      setErr(String(e.message || e));
+    }
+  }
+
+  // ======================================
+  // 5) UI (return block starts here)
+  // ======================================
   return (
     <div style={{ padding: 24, fontFamily: "Arial" }}>
+      {/* ----------------------------
+          SECTION A: Title + Backend URL
+         ---------------------------- */}
       <h1>Project 24</h1>
 
       <p>
         Backend URL: <code>{API_BASE}</code>
       </p>
 
+      {/* ----------------------------
+          SECTION B: Health Check
+         ---------------------------- */}
       <button onClick={checkBackend} style={{ padding: "10px 14px" }}>
         Check Backend Health
       </button>
@@ -120,8 +163,10 @@ export default function App() {
         </pre>
       )}
 
+      {/* ----------------------------
+          SECTION C: Hash Generator
+         ---------------------------- */}
       <hr style={{ margin: "24px 0" }} />
-
       <h2>Generate SHA-256 Hash</h2>
 
       <input
@@ -144,8 +189,10 @@ export default function App() {
         </div>
       )}
 
+      {/* ----------------------------
+          SECTION D: Rule Designer
+         ---------------------------- */}
       <hr style={{ margin: "24px 0" }} />
-
       <h2>Rule Designer</h2>
 
       <div style={{ display: "grid", gap: 8, maxWidth: 320 }}>
@@ -173,8 +220,10 @@ export default function App() {
         Save Rules
       </button>
 
+      {/* ----------------------------
+          SECTION E: Run Attack
+         ---------------------------- */}
       <hr style={{ margin: "24px 0" }} />
-
       <h2>Run Attack</h2>
 
       <select
@@ -192,8 +241,10 @@ export default function App() {
         Run Attack
       </button>
 
+      {/* ----------------------------
+          SECTION F: Results Viewer
+         ---------------------------- */}
       <hr style={{ margin: "24px 0" }} />
-
       <h2>Results</h2>
 
       <button onClick={loadResults} style={{ padding: "10px 14px" }}>
@@ -208,6 +259,27 @@ export default function App() {
         </pre>
       )}
 
+      {/* ----------------------------
+          SECTION G: History Viewer
+         ---------------------------- */}
+      <hr style={{ margin: "24px 0" }} />
+      <h2>History</h2>
+
+      <button onClick={loadHistory} style={{ padding: "10px 14px" }}>
+        Load History
+      </button>
+
+      {history.length === 0 ? (
+        <p style={{ marginTop: 12 }}>No history yet.</p>
+      ) : (
+        <pre style={{ marginTop: 12, background: "#f5f5f5", padding: 12 }}>
+          {JSON.stringify(history, null, 2)}
+        </pre>
+      )}
+
+      {/* ----------------------------
+          SECTION H: Error display (bottom)
+         ---------------------------- */}
       {err && (
         <p style={{ marginTop: 16, color: "red" }}>
           Error: {err}
