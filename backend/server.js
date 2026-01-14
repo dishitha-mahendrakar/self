@@ -189,6 +189,56 @@ app.get("/history", (req, res) => {
   res.json(history);
 });
 
+// --------------------
+// DEBUG: list which files exist in backend folder
+// --------------------
+app.get("/debug/files", (req, res) => {
+  const files = [
+    "hashes.txt",
+    "rules.rule",
+    "rules.json",
+    "result.txt",
+    "time.txt",
+    "history.json",
+  ];
+
+  const status = files.map((name) => ({
+    name,
+    exists: fs.existsSync(name),
+    bytes: fs.existsSync(name) ? fs.statSync(name).size : 0,
+  }));
+
+  res.json(status);
+});
+
+// --------------------
+// DEBUG: read a file by name (restricted allowlist)
+// --------------------
+app.get("/debug/read/:name", (req, res) => {
+  const allowed = new Set([
+    "hashes.txt",
+    "rules.rule",
+    "rules.json",
+    "result.txt",
+    "time.txt",
+    "history.json",
+  ]);
+
+  const name = req.params.name;
+
+  if (!allowed.has(name)) {
+    return res.status(400).json({ error: "File not allowed" });
+  }
+
+  if (!fs.existsSync(name)) {
+    return res.status(404).json({ error: "File not found" });
+  }
+
+  const content = fs.readFileSync(name, "utf-8");
+  res.json({ name, content });
+});
+
+
 // =======================
 // 4) Server listen (bottom)
 // =======================
