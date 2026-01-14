@@ -11,9 +11,11 @@ export default function App() {
   const [status, setStatus] = useState(null);
   const [err, setErr] = useState("");
 
+  // Hash Generator
   const [password, setPassword] = useState("");
   const [hash, setHash] = useState("");
 
+  // Rule Designer
   const [rules, setRules] = useState({
     capitalize: false,
     lowercase: false,
@@ -23,11 +25,21 @@ export default function App() {
     appendDigits: false,
   });
 
+  // Run Attack
   const [attackType, setAttackType] = useState("SHA-256");
 
+  // Results + History
   const [results, setResults] = useState([]);
   const [history, setHistory] = useState([]);
 
+  // ✅ Proof Viewer (NEW)
+  const [fileList, setFileList] = useState([]);
+  const [fileName, setFileName] = useState("hashes.txt");
+  const [fileContent, setFileContent] = useState("");
+
+  // ---------------------------
+  // Health check
+  // ---------------------------
   async function checkBackend() {
     setErr("");
     setStatus(null);
@@ -39,6 +51,9 @@ export default function App() {
     }
   }
 
+  // ---------------------------
+  // Generate hash
+  // ---------------------------
   async function generateHash() {
     setErr("");
     setHash("");
@@ -57,6 +72,9 @@ export default function App() {
     }
   }
 
+  // ---------------------------
+  // Save rules
+  // ---------------------------
   async function saveRules() {
     setErr("");
     try {
@@ -74,6 +92,9 @@ export default function App() {
     }
   }
 
+  // ---------------------------
+  // Run attack
+  // ---------------------------
   async function runAttack() {
     setErr("");
     try {
@@ -91,6 +112,9 @@ export default function App() {
     }
   }
 
+  // ---------------------------
+  // Load results
+  // ---------------------------
   async function loadResults() {
     setErr("");
     try {
@@ -103,6 +127,9 @@ export default function App() {
     }
   }
 
+  // ---------------------------
+  // Load history
+  // ---------------------------
   async function loadHistory() {
     setErr("");
     try {
@@ -110,6 +137,37 @@ export default function App() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
       setHistory(data);
+    } catch (e) {
+      setErr(String(e.message || e));
+    }
+  }
+
+  // ✅ ---------------------------
+  // ✅ Proof Viewer: list files
+  // ✅ ---------------------------
+  async function loadFileList() {
+    setErr("");
+    try {
+      const res = await fetch(`${API_BASE}/debug/files`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setFileList(data);
+    } catch (e) {
+      setErr(String(e.message || e));
+    }
+  }
+
+  // ✅ ---------------------------
+  // ✅ Proof Viewer: read file
+  // ✅ ---------------------------
+  async function readFile() {
+    setErr("");
+    setFileContent("");
+    try {
+      const res = await fetch(`${API_BASE}/debug/read/${fileName}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setFileContent(data.content);
     } catch (e) {
       setErr(String(e.message || e));
     }
@@ -152,6 +210,45 @@ export default function App() {
         onLoadResults={loadResults}
         onLoadHistory={loadHistory}
       />
+
+      {/* ✅ NEW: Proof Viewer Section */}
+      <hr style={{ margin: "24px 0" }} />
+      <h2>Proof: Backend Files</h2>
+
+      <button onClick={loadFileList} style={{ padding: "10px 14px" }}>
+        List Files
+      </button>
+
+      {fileList.length > 0 && (
+        <pre style={{ marginTop: 12, background: "#f5f5f5", padding: 12 }}>
+          {JSON.stringify(fileList, null, 2)}
+        </pre>
+      )}
+
+      <div style={{ marginTop: 12 }}>
+        <select
+          value={fileName}
+          onChange={(e) => setFileName(e.target.value)}
+          style={{ padding: 10, marginRight: 10 }}
+        >
+          <option>hashes.txt</option>
+          <option>rules.rule</option>
+          <option>rules.json</option>
+          <option>result.txt</option>
+          <option>time.txt</option>
+          <option>history.json</option>
+        </select>
+
+        <button onClick={readFile} style={{ padding: "10px 14px" }}>
+          Read File
+        </button>
+      </div>
+
+      {fileContent !== "" && (
+        <pre style={{ marginTop: 12, background: "#f5f5f5", padding: 12 }}>
+          {fileContent}
+        </pre>
+      )}
 
       {err && (
         <p style={{ marginTop: 16, color: "red" }}>
